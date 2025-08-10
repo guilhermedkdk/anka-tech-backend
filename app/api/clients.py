@@ -1,16 +1,19 @@
 from __future__ import annotations
-from typing import List
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.db.models import Client, ClientStatus
 from app.schemas.client import ClientCreate, ClientUpdate, ClientRead
+from app.schemas.pagination import Page, PageMeta
 from app.db.base import get_db
 
 router = APIRouter(prefix="/clients", tags=["clients"])
+
+MAX_PAGE_SIZE = 100
 
 
 @router.post(
@@ -55,14 +58,48 @@ async def get_client(
 
 @router.get(
     "",
-    response_model=List[ClientRead],
+    response_model=Page[ClientRead],
 )
 async def list_clients(
+    q: Optional[str] = Query(None, description="Busca por nome ou email (case-insensitive)"),
+    status_filter: Optional[ClientStatus] = Query(None, alias="status", description="Filtro por status"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=MAX_PAGE_SIZE),
     session: AsyncSession = Depends(get_db),
-) -> List[ClientRead]:
-    # Paginação/busca/filtro entram no próximo commit
-    result = await session.execute(select(Client).order_by(Client.id))
-    return list(result.scalars().all())
+) -> Page[ClientRead]:
+    stmt = select(Client)
+
+    # Filtros
+    conditions = []
+    if q:
+        like = f"%{q}%"
+        conditions.append(or_(Client.name.ilike(like), Client.email.ilike(like)))
+    if status_filter is not None:
+        conditions.append(Client.status == status_filter)
+    if conditions:
+        from sqlalchemy import and_
+        stmt = stmt.where(and_(*conditions))
+
+    # Total para paginação
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = (await session.execute(count_stmt)).scalar_one()
+
+    # Ordenação + paginação
+    stmt = stmt.order_by(Client.id).offset((page - 1) * page_size).limit(page_size)
+    result = await session.execute(stmt)
+    items = list(result.scalars().all())
+
+    pages = (total + page_size - 1) // page_size if total else 0
+
+    return Page[ClientRead](
+        items=items,
+        meta=PageMeta(
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=pages,
+        ),
+    )
 
 
 @router.put(
