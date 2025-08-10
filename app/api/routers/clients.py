@@ -10,8 +10,13 @@ from app.db.models import Client, ClientStatus
 from app.schemas.client import ClientCreate, ClientUpdate, ClientRead
 from app.schemas.pagination import Page, PageMeta
 from app.db.base import get_db
+from app.auth.dependencies.authz import read_only, admin_required
 
-router = APIRouter(prefix="/clients", tags=["clients"])
+router = APIRouter(
+    prefix="/clients",
+    tags=["clients"],
+    dependencies=[Depends(read_only)],
+)
 
 MAX_PAGE_SIZE = 100
 
@@ -21,6 +26,7 @@ MAX_PAGE_SIZE = 100
     response_model=ClientRead,
     status_code=status.HTTP_201_CREATED,
     responses={409: {"description": "Email já cadastrado"}},
+    dependencies=[Depends(admin_required)],
 )
 async def create_client(
     payload: ClientCreate,
@@ -69,7 +75,6 @@ async def list_clients(
 ) -> Page[ClientRead]:
     stmt = select(Client)
 
-    # Filtros
     conditions = []
     if q:
         like = f"%{q}%"
@@ -80,11 +85,9 @@ async def list_clients(
         from sqlalchemy import and_
         stmt = stmt.where(and_(*conditions))
 
-    # Total para paginação
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await session.execute(count_stmt)).scalar_one()
 
-    # Ordenação + paginação
     stmt = stmt.order_by(Client.id).offset((page - 1) * page_size).limit(page_size)
     result = await session.execute(stmt)
     items = list(result.scalars().all())
@@ -93,22 +96,15 @@ async def list_clients(
 
     return Page[ClientRead](
         items=items,
-        meta=PageMeta(
-            total=total,
-            page=page,
-            page_size=page_size,
-            pages=pages,
-        ),
+        meta=PageMeta(total=total, page=page, page_size=page_size, pages=pages),
     )
 
 
 @router.put(
     "/{client_id}",
     response_model=ClientRead,
-    responses={
-        404: {"description": "Cliente não encontrado"},
-        409: {"description": "Email já cadastrado"},
-    },
+    responses={404: {"description": "Cliente não encontrado"}, 409: {"description": "Email já cadastrado"}},
+    dependencies=[Depends(admin_required)],
 )
 async def update_client_put(
     client_id: int,
@@ -136,10 +132,8 @@ async def update_client_put(
 @router.patch(
     "/{client_id}",
     response_model=ClientRead,
-    responses={
-        404: {"description": "Cliente não encontrado"},
-        409: {"description": "Email já cadastrado"},
-    },
+    responses={404: {"description": "Cliente não encontrado"}, 409: {"description": "Email já cadastrado"}},
+    dependencies=[Depends(admin_required)],
 )
 async def update_client_patch(
     client_id: int,
@@ -171,6 +165,7 @@ async def update_client_patch(
     "/{client_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={404: {"description": "Cliente não encontrado"}},
+    dependencies=[Depends(admin_required)],
 )
 async def delete_client(
     client_id: int,
@@ -182,6 +177,4 @@ async def delete_client(
 
     await session.delete(client)
     await session.commit()
-
-    # Resposta vazia (sem body) para cumprir 204
     return Response(status_code=status.HTTP_204_NO_CONTENT)
