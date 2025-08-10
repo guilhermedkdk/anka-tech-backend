@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.clients import router as clients_router
-
+from app.api.routers.clients import router as clients_router
+from app.api.routers.auth import router as auth_router
 
 def create_app() -> FastAPI:
     app = FastAPI(title="invest-backend")
@@ -20,7 +20,8 @@ def create_app() -> FastAPI:
     )
 
     # Rotas de domínio
-    app.include_router(clients_router)  # /clients (CRUD)
+    app.include_router(auth_router)    # /auth (login/refresh)
+    app.include_router(clients_router) # /clients (CRUD)
 
     return app
 

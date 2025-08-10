@@ -4,8 +4,18 @@ from enum import Enum
 from typing import List, Optional
 
 from sqlalchemy import (
-    Date, DateTime, Enum as SAEnum, ForeignKey, Integer, Numeric, String,
-    UniqueConstraint, CheckConstraint, Index, text
+    Boolean,
+    Date,
+    DateTime,
+    Enum as SAEnum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    UniqueConstraint,
+    CheckConstraint,
+    Index,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -87,3 +97,16 @@ class DailyReturn(Base):
     close_price: Mapped[Numeric] = mapped_column(Numeric(20, 8), nullable=False)
 
     asset: Mapped["Asset"] = relationship(back_populates="daily_returns")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
