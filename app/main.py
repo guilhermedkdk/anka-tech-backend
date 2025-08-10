@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.api.routers.clients import router as clients_router
 from app.api.routers.auth import router as auth_router
 from app.api.routers.assets import router as assets_router
+from app.api.routers.allocations import router as allocations_router
 
 from app.integrations.yahoo import close_yahoo_client, get_yahoo
 from app.cache.redis_cache import get_redis
@@ -38,9 +39,10 @@ def create_app() -> FastAPI:
     )
 
     # Rotas
-    app.include_router(auth_router)     # /auth
-    app.include_router(clients_router)  # /clients
-    app.include_router(assets_router)   # /assets/available
+    app.include_router(auth_router)        # /auth
+    app.include_router(clients_router)     # /clients
+    app.include_router(assets_router)      # /assets/available
+    app.include_router(allocations_router) # /clients/{id}/allocations 
 
     return app
 
