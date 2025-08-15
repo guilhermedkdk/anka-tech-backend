@@ -15,7 +15,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ✅ agora com domínio example.com
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@example.com")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
 SEED_DEMO = os.getenv("SEED_DEMO", "1") not in ("0", "false", "False", "")
 
 async def _get_or_create_asset(db: AsyncSession, ticker: str) -> m.Asset:
