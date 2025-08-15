@@ -53,6 +53,18 @@ senha: changeme
   - POST /clients/{client_id}/allocations
   - PATCH /clients/{client_id}/allocations/{allocation_id}
   - DELETE /clients/{client_id}/allocations/{allocation_id} (204)
+ 
+## 📊 Diagramas
+
+### Modelo de dados
+Representa as entidades principais e relações usadas nas consultas e no cálculo de alocações e retornos.
+
+<img width="3840" height="2586" alt="mermaid-diagram-models" src="https://github.com/user-attachments/assets/2802834f-7e98-4314-b424-bfc67319c317" />
+
+### Fluxo: busca de ativos (cache + Yahoo)
+Sequência executada em `GET /assets/available`, com **cache Redis (TTL 1h)** e **retry/backoff** via `httpx + tenacity`.
+
+<img width="3840" height="2637" alt="mermaid-diagram-assets" src="https://github.com/user-attachments/assets/888a2293-fb66-4ddb-95b5-94242b5b83dd" />
 
 ## 📝 Checklist do Case (PDF)
 
@@ -88,4 +100,5 @@ senha: changeme
 <hr/>
 
 🚀 Projeto desenvolvido com dedicação e carinho.
+
 ✨ Animado para poder contribuir profissionalmente com o time.
